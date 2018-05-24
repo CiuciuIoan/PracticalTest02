@@ -27,23 +27,17 @@ public class PracticalTest02MainActivity extends AppCompatActivity {
     // Client widgets
     private EditText clientAddressEditText = null;
     private EditText clientPortEditText = null;
-    private EditText cityEditText = null;
-    private Spinner informationTypeSpinner = null;
-    private Button getWeatherForecastButton = null;
+
     private TextView timerTextView = null;
 
-    private EditText myHour, myMinutes;
-
+    private EditText setWord;
+    private Button lookup;
+    private String myWord;
+    TimeInformation timeInformation;
     private ServerThread serverThread = null;
     private ClientThread clientThread = null;
 
     private ConnectButtonClickListener connectButtonClickListener = new ConnectButtonClickListener();
-
-    private Button clientSetButton;
-    private Button clientResetButton;
-    private Button clientPollButton;
-    private String command;
-
     private class ConnectButtonClickListener implements Button.OnClickListener {
         @Override
         public void onClick(View view) {
@@ -78,29 +72,15 @@ public class PracticalTest02MainActivity extends AppCompatActivity {
                 return;
             }
 
+            timeInformation = null;
+
             timerTextView.setText(Constants.EMPTY_STRING);
-            TimeInformation timeInformation = null;
+            myWord = setWord.getText().toString();
 
-            switch(view.getId()) {
-                case R.id.set:
-                    timeInformation = new TimeInformation(myHour.getText().toString() ,myMinutes.getText().toString());
-                    command = new String("set");
-                    break;
-                case R.id.reset:
-                    myHour.setText(null);
-                    myMinutes.setText(null);
-                    timeInformation = new TimeInformation(myHour.getText().toString() ,myMinutes.getText().toString());
-                    command = new String("reset");
-                    break;
-                case R.id.poll:
-                    command = new String("poll");
-                    break;
-                default:
-                    command = new String("");
-            }
+            Log.d("cuvant initial: ", myWord);
 
-            clientThread = new ClientThread(
-                    command, clientAddress, Integer.parseInt(clientPort), timerTextView, timeInformation
+            serverThread.setData(myWord);
+            clientThread = new ClientThread(clientAddress, Integer.parseInt(clientPort), timerTextView, myWord, timeInformation
             );
             clientThread.start();
         }
@@ -120,15 +100,10 @@ public class PracticalTest02MainActivity extends AppCompatActivity {
         clientAddressEditText = (EditText)findViewById(R.id.client_address_edit_text);
         clientPortEditText = (EditText)findViewById(R.id.client_port_edit_text);
 
-        clientSetButton = (Button)findViewById(R.id.set);
-        clientResetButton = (Button)findViewById(R.id.reset);
-        clientPollButton = (Button)findViewById(R.id.poll);
-        clientSetButton.setOnClickListener(timerButtonClickListener);
-        clientResetButton.setOnClickListener(timerButtonClickListener);
-        clientPollButton.setOnClickListener(timerButtonClickListener);
+        setWord = (EditText)findViewById(R.id.myWord);
 
-        myHour = (EditText) findViewById(R.id.myHour);
-        myMinutes = (EditText) findViewById(R.id.myMinute);
+        lookup = (Button)findViewById(R.id.setWord);
+        lookup.setOnClickListener(timerButtonClickListener);
 
         timerTextView = (TextView)findViewById(R.id.weather_forecast_text_view);
     }

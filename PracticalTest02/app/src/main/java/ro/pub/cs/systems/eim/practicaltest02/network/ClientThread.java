@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.sql.Time;
 
 import ro.pub.cs.systems.eim.practicaltest02.general.Constants;
 import ro.pub.cs.systems.eim.practicaltest02.general.Utilities;
@@ -14,22 +15,20 @@ import ro.pub.cs.systems.eim.practicaltest02.model.TimeInformation;
 
 public class ClientThread extends Thread {
 
-    private int hour;
-    private int minute;
-    private boolean active;
+
     private String address;
     private int port;
-    private String command;
     private TextView timerTextView;
-    private TimeInformation timeInformation;
     private Socket socket;
+    public String word;
+    public TimeInformation timeInformation;
 
 
-    public ClientThread(String command, String address, int port, TextView timerTextView, TimeInformation timeInformation) {
+    public ClientThread(String address, int port, TextView timerTextView, String word, TimeInformation timeInformation) {
         this.port = port;
         this.address = address;
-        this.command = command;
         this.timerTextView = timerTextView;
+        this.word = word;
         this.timeInformation = timeInformation;
     }
 
@@ -48,22 +47,24 @@ public class ClientThread extends Thread {
                 return;
             }
 
-            printWriter.println(command);
+            Log.d("cuvantul in client: ", word);
+            printWriter.println(word);
             printWriter.flush();
 
-            if (timeInformation != null) {
-                printWriter.println(timeInformation.hour + ":" + timeInformation.minutes);
-                printWriter.flush();
-            }
+            printWriter.println(timeInformation);
+            printWriter.flush();
+
 
             String timerInformation;
+
             while ((timerInformation = bufferedReader.readLine()) != null) {
                 Log.d(Constants.TAG,"[ClientThread] " + timerInformation);
                 final String finalizedTimerInformation = timerInformation;
                 timerTextView.post(new Runnable() {
                     @Override
                     public void run() {
-                        timerTextView.setText(finalizedTimerInformation);
+                        String newStr = timerTextView.getText() + finalizedTimerInformation;
+                        timerTextView.setText(newStr);
                     }
                 });
             }

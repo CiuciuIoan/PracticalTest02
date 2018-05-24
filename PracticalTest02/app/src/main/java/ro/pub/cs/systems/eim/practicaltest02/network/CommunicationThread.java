@@ -1,6 +1,7 @@
 package ro.pub.cs.systems.eim.practicaltest02.network;
 
 import android.content.Intent;
+import android.text.TextUtils;
 import android.util.Log;
 
 import org.json.JSONException;
@@ -57,73 +58,53 @@ public class CommunicationThread extends Thread {
                 Log.e(Constants.TAG, "[COMMUNICATION THREAD] Buffered Reader / Print Writer are null!");
                 return;
             }
-            Log.i(Constants.TAG, "[COMMUNICATION THREAD] Waiting for parameters from client (city / information type!");
-            String command = bufferedReader.readLine();;
-            if (command == null || command.isEmpty()) {
-                Log.e(Constants.TAG, "[COMMUNICATION THREAD] Error receiving parameters from client (city / information type!");
+            Log.i(Constants.TAG, "[COMMUNICATION THREAD] Waiting for parameters from client!");
+            String word = bufferedReader.readLine();;
+            if (word == null || word.isEmpty()) {
+                Log.e(Constants.TAG, "[COMMUNICATION THREAD] Error receiving the word ");
                 return;
             }
 
             String result = null;
 
-            if (command.equals("set")) {
-                String hour = bufferedReader.readLine();
-                result = hour;
-                serverThread.setData(result);
+            HttpClient httpClient = new DefaultHttpClient();
+            HttpPost httpPost = new HttpPost("http://services.aonaware.com/DictService/DictService.asmx/Define");
+            List<NameValuePair> params = new ArrayList<>();
+            params.add(new BasicNameValuePair("word", word));
+            UrlEncodedFormEntity urlEncodedFormEntity = new UrlEncodedFormEntity(params, HTTP.UTF_8);
+            httpPost.setEntity(urlEncodedFormEntity);
+            ResponseHandler<String> responseHandler = new BasicResponseHandler();
+
+            String pageSourceCode = httpClient.execute(httpPost, responseHandler);
+            if (pageSourceCode == null) {
+                Log.e(Constants.TAG, "[COMMUNICATION THREAD] Error getting the information from the webservice!");
+                return;
             }
 
-            if (command.equals("reset")) {
-                result = new String(":");
-                serverThread.setData(result);
+            Log.i("DEFINITION",pageSourceCode);
+            int indexStartDef = pageSourceCode.indexOf("<WordDefinition>");
+
+            int indexStartOfDef = indexStartDef + "<WordDefinition>".length();
+
+            int indexEndOfDef = pageSourceCode.indexOf("</WordDefinition>");
+            result = pageSourceCode.substring(indexStartOfDef, indexEndOfDef);
+
+            if (TextUtils.isEmpty(result)) {
+                Log.e(Constants.TAG, "[COMMUNICATION THREAD] Definition is null!");
+                return;
             }
-
-            if (command.equals("poll")) {
-                if (serverThread.getData().equals(":") || serverThread.getData().equals("")) {
-                    result = new String("Set an alarm first");
-                }
-
-                TimeInformation timerInformation = null;
-                String wordLink = "http://www.oraexacta.net";
-                Document doc = Jsoup.connect(wordLink).get();
-
-                Element getHour = doc.select("div[id=timediv]").first();
-
-                Log.d("Myhour", getHour.text());
-
-                String clock = getHour.text();
-
-                String hour = clock.split(":")[0];
-                String minutes = clock.split(":")[1];
-                String seconds = clock.split(":")[2];
-                String all = hour + ":"  + minutes +  ":" + seconds;
-
-                String activated = null;
-
-                if (!serverThread.getData().equals(":") && !serverThread.getData().equals("")) {
-                    int hourToCompare = Integer.parseInt(serverThread.getData().split(":")[0]);
-                    int minuteToCompare = Integer.parseInt(serverThread.getData().split(":")[1]);
-
-                    int hourCurrent = Integer.parseInt(hour);
-                    int minuteCurrent = Integer.parseInt(minutes);
-
-                    if (hourToCompare < hourCurrent) {
-                        activated = "yes";
-                    } else {
-                        activated = "no";
-                    }
-                    if (hourCurrent == hourToCompare) {
-                        if (minuteToCompare < minuteCurrent)
-                            activated = "yes";
-                        else
-                            activated = "no";
-                    }
-                    result = new String(activated);
-                }
-            }
-
-            Log.d(Constants.TAG,"[CommandThread] " + result);
+            Log.d(Constants.TAG, result);
             printWriter.println(result);
             printWriter.flush();
+
+            /*  git init
+                git add *
+                git commit -m "commitFirst"
+                git remote add origin linkCatreGithub
+                git remote -v
+                git push -f origin master
+            */
+
         } catch (IOException ioException) {
             Log.e(Constants.TAG, "[COMMUNICATION THREAD] An exception has occurred: " + ioException.getMessage());
             if (Constants.DEBUG) {
